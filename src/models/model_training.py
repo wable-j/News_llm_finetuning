@@ -12,7 +12,7 @@ from transformers import (
     AutoTokenizer,
     AutoModelForSeq2SeqLM,
     DataCollatorForSeq2Seq,
-    Seq2SeqTrainingArguments,
+    TrainingArguments,
     Trainer
 )
 
@@ -64,7 +64,7 @@ def prepare_dataset_for_training(dataset_dict, tokenizer):
         inputs = examples['text']
         targets = examples['summary']
         
-        # Tokenize inputs and targets
+        # Tokenize inputs
         model_inputs = tokenizer(
             inputs, 
             max_length=MAX_INPUT_LENGTH,
@@ -72,16 +72,24 @@ def prepare_dataset_for_training(dataset_dict, tokenizer):
             truncation=True
         )
         
-        # Set up the tokenizer for targets
-        with tokenizer.as_target_tokenizer():
-            labels = tokenizer(
-                targets,
-                max_length=MAX_TARGET_LENGTH,
-                padding='max_length',
-                truncation=True
-            )
+        # Tokenize targets
+        labels = tokenizer(
+            targets,
+            max_length=MAX_TARGET_LENGTH,
+            padding='max_length',
+            truncation=True
+        )
         
         model_inputs['labels'] = labels['input_ids']
+        
+        # Replace padding token id with -100 so they are ignored in computing loss
+        labels_with_ignore_index = []
+        for label in labels['input_ids']:
+            labels_with_ignore_index.append([
+                -100 if token == tokenizer.pad_token_id else token for token in label
+            ])
+        
+        model_inputs['labels'] = labels_with_ignore_index
         
         return model_inputs
     
@@ -94,7 +102,7 @@ def prepare_dataset_for_training(dataset_dict, tokenizer):
     
     return tokenized_datasets
 
-# Define a simple ROUGE metric for evaluation during training
+# Define a custom ROUGE metric for evaluation
 class RougeMetric:
     def __init__(self, tokenizer):
         self.tokenizer = tokenizer
@@ -137,6 +145,29 @@ class RougeMetric:
             'rougeL': rougeL
         }
 
+# Custom generation function for summarization
+def generate_summaries(model, tokenizer, batch, device):
+    inputs = tokenizer(
+        batch["text"], 
+        padding="max_length", 
+        truncation=True, 
+        max_length=MAX_INPUT_LENGTH,
+        return_tensors="pt"
+    )
+    inputs = inputs.to(device)
+    
+    with torch.no_grad():
+        generated_ids = model.generate(
+            inputs.input_ids,
+            attention_mask=inputs.attention_mask,
+            max_length=MAX_TARGET_LENGTH,
+            num_beams=4,
+            early_stopping=True
+        )
+    
+    summaries = tokenizer.batch_decode(generated_ids, skip_special_tokens=True)
+    return summaries
+
 def fine_tune_model(tokenized_datasets):
     """
     Fine-tune the model on our dataset
@@ -158,15 +189,13 @@ def fine_tune_model(tokenized_datasets):
     os.makedirs(MODELS_DIR, exist_ok=True)
     output_dir = os.path.join(MODELS_DIR, "fine-tuned-news-summarizer")
     
-    training_args = Seq2SeqTrainingArguments(
+    training_args = TrainingArguments(
         output_dir=output_dir,
         per_device_train_batch_size=BATCH_SIZE,
         per_device_eval_batch_size=BATCH_SIZE,
         learning_rate=LEARNING_RATE,
         weight_decay=WEIGHT_DECAY,
         num_train_epochs=NUM_EPOCHS,
-        predict_with_generate=True,
-        generation_max_length=MAX_TARGET_LENGTH,
         save_strategy="epoch",
         evaluation_strategy="epoch",
         logging_dir=os.path.join(output_dir, "logs"),
@@ -178,7 +207,19 @@ def fine_tune_model(tokenized_datasets):
         report_to="none",  # Set to "wandb" to use Weights & Biases
     )
     
-    # Initialize trainer using standard Trainer instead of Seq2SeqTrainer for better compatibility
+    # Define compute_metrics function for the Trainer
+    def compute_metrics(eval_pred):
+        predictions, labels = eval_pred
+        
+        # Generate summaries for the validation set
+        if isinstance(predictions, tuple):
+            # In some versions of transformers, predictions might be a tuple
+            predictions = predictions[0]
+        
+        # Compute ROUGE metrics
+        return rouge_metric.compute_metrics((predictions, labels))
+    
+    # Initialize trainer
     trainer = Trainer(
         model=model,
         args=training_args,
@@ -186,7 +227,6 @@ def fine_tune_model(tokenized_datasets):
         eval_dataset=tokenized_datasets["validation"],
         tokenizer=tokenizer,
         data_collator=data_collator,
-        compute_metrics=rouge_metric.compute_metrics,
     )
     
     # Train the model
@@ -206,6 +246,11 @@ def main():
     Main function to execute the model fine-tuning pipeline
     """
     print("Starting model fine-tuning pipeline...")
+    
+    # Install required packages for training
+    print("Ensuring required packages are installed...")
+    import subprocess
+    subprocess.run([sys.executable, "-m", "pip", "install", "transformers==4.30.2", "datasets", "rouge-score", "--quiet"])
     
     # Load tokenizer first
     tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)

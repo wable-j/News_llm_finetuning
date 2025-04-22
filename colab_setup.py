@@ -14,12 +14,26 @@ def install_dependencies():
     # First ensure numpy<2.0.0 is installed to avoid compatibility issues
     subprocess.run([sys.executable, "-m", "pip", "install", "numpy<2.0.0", "--quiet"])
     
-    # Then install the rest of the dependencies
-    subprocess.run([sys.executable, "-m", "pip", "install", "-r", "requirements.txt", "--quiet"])
+    # Install specific transformers version known to be compatible
+    subprocess.run([sys.executable, "-m", "pip", "install", "transformers==4.30.2", "--quiet"])
+    
+    # Install other dependencies
+    critical_packages = [
+        "torch",
+        "datasets",
+        "feedparser",
+        "nltk",
+        "pandas",
+        "matplotlib",
+        "seaborn",
+        "sentencepiece",
+        "flask",
+        "rouge-score"
+    ]
     
     # Verify critical packages
     print("Verifying critical packages...")
-    for package in ["torch", "transformers", "feedparser", "flask", "pyngrok"]:
+    for package in critical_packages:
         try:
             __import__(package)
             print(f"✅ {package} successfully installed")
@@ -53,18 +67,14 @@ def setup_colab_environment():
     
     print("Colab environment setup completed")
 
-def setup_ngrok_for_deployment(port=5000, auth_token=None):
-    """Set up ngrok for exposing the Flask deployment on Colab"""
-    from pyngrok import ngrok, conf
+def setup_flask_for_colab(port=5000):
+    """Set up Flask to run on Colab"""
+    from google.colab.output import eval_js
     
-    # Set ngrok auth token if provided
-    if auth_token:
-        conf.get_default().auth_token = auth_token
-    
-    # Get public URL and return
-    public_url = ngrok.connect(port)
-    print(f"Public URL for Flask app: {public_url}")
-    return public_url
+    # Generate a public URL
+    url = eval_js(f"google.colab.kernel.proxyPort({port})")
+    print(f"Access Flask app at: {url}")
+    return url
 
 def main():
     """Main function to set up Colab environment"""
@@ -81,9 +91,9 @@ def main():
     print("\nSetup completed successfully! You can now run the project.")
     print("To run the full pipeline: !python main.py")
     print("To run specific steps: !python main.py --step [data|train|evaluate|deploy]")
-    print("\nFor deployment with public access, add this to your notebook:")
-    print("from colab_setup import setup_ngrok_for_deployment")
-    print("public_url = setup_ngrok_for_deployment()")
+    print("\nFor deployment with public access:")
+    print("from colab_setup import setup_flask_for_colab")
+    print("setup_flask_for_colab()")
     
 if __name__ == "__main__":
     main()
