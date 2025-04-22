@@ -1,0 +1,3 @@
+<!-- Use this file to provide workspace-specific custom instructions to Copilot. For more details, visit https://code.visualstudio.com/docs/copilot/copilot-customization#_use-a-githubcopilotinstructionsmd-file -->
+
+This project involves fine-tuning a Hugging Face model for summarizing news articles retrieved from RSS feeds. The workflow includes dataset preparation, model selection, fine-tuning, evaluation, and deployment. Please ensure that all code is optimized for efficiency and clarity.
