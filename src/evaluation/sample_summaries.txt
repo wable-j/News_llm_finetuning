@@ -1,0 +1,51 @@
+Sample Generated Summaries vs. References
+================================================================================
+
+Title: Apple CEO was presented with an original Macintosh. See his reaction
+Source: CNN.com - RSS Channel - HP Hero
+Reference Summary: CEO Tim Cook personally welcomed customers to the new Apple store in Mumbai as the tech company opens its first retail stores in India. CNN's Vedika Sud reports.
+Generated Summary: CEO Tim Cook personally welcomed customers to the new Apple store in Mumbai as the tech company opens its first retail stores in India. CNN's Vedika Sud reports. CEO Tim Cook personal welcomes customers toThe new Apple Store in Mumbai. CNN’s Vedika
+--------------------------------------------------------------------------------
+
+Title: Podcast: One country musician is calling for other artists to oppose assault rifles
+Source: CNN.com - RSS Channel - HP Hero
+Reference Summary: 
+Generated Summary:  may be available to be a lot of people in the U.S. in the next few days and weeks and months and years and years to come and that is a lot to be. to be in the United States in the last few years and decades.
+--------------------------------------------------------------------------------
+
+Title: Judge in Fox News-Dominion defamation trial: 'The parties have resolved their case'
+Source: CNN.com - RSS Channel - HP Hero
+Reference Summary: The judge just announced in court that a settlement has been reached in the historic defamation case between Fox News and Dominion Voting Systems.
+Generated Summary: The judge just announced in court that a settlement has been reached in the historic defamation case between Fox News and Dominion Voting Systems, the judge just announce in court just announced In court thata settlement has just announced that a Settlement has been reach in theHist defamation case
+--------------------------------------------------------------------------------
+
+Title: Pilot makes history after landing on top of a 56-story hotel
+Source: CNN.com - RSS Channel - HP Hero
+Reference Summary: Polish pilot Lukasz Czepiela made history after landing a plane on a helipad at the top of a 56-story hotel in Dubai.
+Generated Summary: Polish pilot Lukasz Czepiela made history after landing a plane on a helipad at the top of a 56-story hotel in Dubai, made history After landing a planes on aHelipadat at thetop of a.
+--------------------------------------------------------------------------------
+
+Title: A 13-year-old dies after participating in a Benadryl TikTok 'challenge'
+Source: CNN.com - RSS Channel - HP Hero
+Reference Summary: A 13-year-old in Ohio has died after "he took a bunch of Benadryl," trying a dangerous TikTok challenge that's circulating online, according to a CNN affiliate and a GoFundMe account from his family.
+Generated Summary: A 13-year-old in Ohio has died after "he took a bunch of Benadryl," trying a dangerous TikTok challenge that's circulating online, according to a CNN affiliate and a GoFundMe account from his family. A 13,000
+--------------------------------------------------------------------------------
+
+Title: FTC chair Lina Khan warns AI could 'turbocharge' fraud and scams
+Source: CNN.com - RSS Channel - HP Hero
+Reference Summary: Artificial intelligence tools such as ChatGPT could lead to a "turbocharging" of consumer harms including fraud and scams, and the US government has substantial authority to crack down on AI-driven consumer harms under existing law, members of the Federal Trade Commission said Tuesday.
+Generated Summary: Artificial intelligence tools such as ChatGPT could lead to a "turbocharging" of consumer harms including fraud and scams, and the US government has substantial authority to crack down on AI-driven consumer harms under existing law, members of the Federal Trade Commission said Tuesday.
+--------------------------------------------------------------------------------
+
+Title: Maine authorities detained a person of interest after 4 people were found dead in a home and 3 others shot while driving
+Source: CNN.com - RSS Channel - HP Hero
+Reference Summary: Maine authorities have detained a person of interest and continue to investigate after two shooting incidents that appear to be connected left at least four people dead and three others injured, state police said.
+Generated Summary: Maine authorities have detained a person of interest and continue to investigate after two shooting incidents that appear to be connected left at least four people dead and three others injured, state police said.Maine Authorities have detainedA person ofInterest and continue the investigate after 2 shooting incidents That appear to have left
+--------------------------------------------------------------------------------
+
+Title: Netflix is winding down its DVD business after 25 years
+Source: CNN.com - RSS Channel - HP Hero
+Reference Summary: Netflix is officially winding down the business that helped make it a household name.
+Generated Summary: Netflix is officially winding down the business that helped make it a household name. Netflix is officially wind down theBusiness that helpedMake it a Household name.Netflix is Offic winding downThe business that help make it’s officially Wind down the Business that helped making it a
+--------------------------------------------------------------------------------
+

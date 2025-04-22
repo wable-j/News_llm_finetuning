@@ -16,11 +16,9 @@ DEPLOYMENT_DIR = PROJECT_ROOT / "src" / "deployment"
 RSS_FEEDS = [
     "http://rss.cnn.com/rss/cnn_topstories.rss",
     "https://feeds.nbcnews.com/nbcnews/public/news",
-    "https://www.npr.org/rss/rss.php?id=1001",
-    "http://feeds.bbci.co.uk/news/world/rss.xml",
-    "https://rss.nytimes.com/services/xml/rss/nyt/World.xml"
+    # Reduced number of feeds to speed up data collection
 ]
-MAX_ARTICLES_PER_FEED = 100
+MAX_ARTICLES_PER_FEED = 50  # Reduced from 100 to speed up data processing
 DATA_CACHE_FILE = DATA_DIR / "news_articles.json"
 PROCESSED_DATA_FILE = DATA_DIR / "processed_articles.json"
 TRAIN_FILE = DATA_DIR / "train.jsonl"
@@ -31,21 +29,21 @@ TEST_FILE = DATA_DIR / "test.jsonl"
 TRAIN_RATIO = 0.8
 VAL_RATIO = 0.1
 TEST_RATIO = 0.1
-MAX_INPUT_LENGTH = 1024
-MAX_TARGET_LENGTH = 128
+MAX_INPUT_LENGTH = 512  # Reduced from 1024 to fit in 8GB VRAM
+MAX_TARGET_LENGTH = 64   # Reduced from 128 for faster training
 RANDOM_SEED = 42
 
 # Model settings
-MODEL_NAME = "google/pegasus-cnn_dailymail"  # Base model for fine-tuning
-BATCH_SIZE = 4
-LEARNING_RATE = 5e-5
-NUM_EPOCHS = 3
+MODEL_NAME = "facebook/bart-large-cnn"  # Alternative model that works well for summarization
+BATCH_SIZE = 4  # Maintained batch size of 4 which should work with 8GB VRAM
+LEARNING_RATE = 1e-4  # Increased from 5e-5 for faster convergence
+NUM_EPOCHS = 1  # Reduced from 3 to complete training in 30 minutes
 WEIGHT_DECAY = 0.01
 WARMUP_RATIO = 0.1
-GRADIENT_ACCUMULATION_STEPS = 4
+GRADIENT_ACCUMULATION_STEPS = 2  # Reduced from 4 for faster updates
 
 # Evaluation settings
-METRICS = ["rouge1", "rouge2", "rougeL", "bleu", "meteor"]
+METRICS = ["rouge1", "rouge2", "rougeL"]  # Reduced metrics for faster evaluation
 SAVE_EVERY_N_STEPS = 100
 
 # Deployment settings

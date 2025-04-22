@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from tqdm import tqdm
 import torch
-from datasets import load_metric
+from rouge_score import rouge_scorer
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 
 # Import configuration
@@ -104,38 +104,77 @@ def generate_summaries(model, tokenizer, test_data, device='cuda' if torch.cuda.
 
 def evaluate_summaries(summaries):
     """
-    Evaluate the generated summaries using various metrics
+    Evaluate the generated summaries using rouge-score library directly
+    instead of relying on evaluate.load('rouge')
     """
-    # Load metrics
-    rouge = load_metric("rouge")
+    # Create a rouge scorer
+    scorer = rouge_scorer.RougeScorer(['rouge1', 'rouge2', 'rougeL'], use_stemmer=True)
     
     # Prepare references and predictions
     references = [item['reference_summary'] for item in summaries]
     predictions = [item['generated_summary'] for item in summaries]
     
     # Calculate ROUGE scores
-    rouge_results = rouge.compute(
-        predictions=predictions,
-        references=references,
-        use_stemmer=True
-    )
+    rouge1_precision = 0.0
+    rouge1_recall = 0.0
+    rouge1_f1 = 0.0
+    
+    rouge2_precision = 0.0
+    rouge2_recall = 0.0
+    rouge2_f1 = 0.0
+    
+    rougeL_precision = 0.0
+    rougeL_recall = 0.0
+    rougeL_f1 = 0.0
+    
+    for ref, pred in zip(references, predictions):
+        scores = scorer.score(ref, pred)
+        
+        # Rouge-1
+        rouge1_precision += scores['rouge1'].precision
+        rouge1_recall += scores['rouge1'].recall
+        rouge1_f1 += scores['rouge1'].fmeasure
+        
+        # Rouge-2
+        rouge2_precision += scores['rouge2'].precision
+        rouge2_recall += scores['rouge2'].recall
+        rouge2_f1 += scores['rouge2'].fmeasure
+        
+        # Rouge-L
+        rougeL_precision += scores['rougeL'].precision
+        rougeL_recall += scores['rougeL'].recall
+        rougeL_f1 += scores['rougeL'].fmeasure
+    
+    # Calculate averages
+    n = len(references)
+    rouge1_precision /= n
+    rouge1_recall /= n
+    rouge1_f1 /= n
+    
+    rouge2_precision /= n
+    rouge2_recall /= n
+    rouge2_f1 /= n
+    
+    rougeL_precision /= n
+    rougeL_recall /= n
+    rougeL_f1 /= n
     
     # Format results
     formatted_results = {
         'rouge1': {
-            'precision': rouge_results['rouge1'].precision,
-            'recall': rouge_results['rouge1'].recall,
-            'f1': rouge_results['rouge1'].fmeasure
+            'precision': rouge1_precision,
+            'recall': rouge1_recall,
+            'f1': rouge1_f1
         },
         'rouge2': {
-            'precision': rouge_results['rouge2'].precision,
-            'recall': rouge_results['rouge2'].recall,
-            'f1': rouge_results['rouge2'].fmeasure
+            'precision': rouge2_precision,
+            'recall': rouge2_recall,
+            'f1': rouge2_f1
         },
         'rougeL': {
-            'precision': rouge_results['rougeL'].precision,
-            'recall': rouge_results['rougeL'].recall,
-            'f1': rouge_results['rougeL'].fmeasure
+            'precision': rougeL_precision,
+            'recall': rougeL_recall,
+            'f1': rougeL_f1
         }
     }
     
@@ -175,7 +214,7 @@ def visualize_results(summaries, evaluation_results):
     os.makedirs(viz_dir, exist_ok=True)
     
     # Set plot style
-    plt.style.use('seaborn-v0_8-whitegrid')
+    sns.set_style("whitegrid")
     
     # 1. Plot ROUGE scores
     plt.figure(figsize=(10, 6))
