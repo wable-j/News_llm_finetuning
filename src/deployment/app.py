@@ -1,5 +1,5 @@
 """
-Module for deploying the fine-tuned summarization model as a web API
+Module for deploying a summarization model as a web API with fallback to pre-trained model
 """
 
 import os
@@ -15,7 +15,7 @@ from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from config import (
-    MODELS_DIR, MAX_INPUT_LENGTH, MAX_TARGET_LENGTH, API_PORT, API_HOST
+    MODELS_DIR, MAX_INPUT_LENGTH, MAX_TARGET_LENGTH, API_PORT, API_HOST, MODEL_NAME
 )
 
 # Create Flask app
@@ -24,28 +24,38 @@ app = Flask(__name__)
 # Global model and tokenizer objects
 MODEL = None
 TOKENIZER = None
+USING_PRETRAINED = False
 
 def load_model():
     """
-    Load the fine-tuned model and tokenizer
+    Load the fine-tuned model and tokenizer, with fallback to pre-trained model
     """
-    global MODEL, TOKENIZER
+    global MODEL, TOKENIZER, USING_PRETRAINED
     
     model_dir = os.path.join(MODELS_DIR, "fine-tuned-news-summarizer")
     
-    if not os.path.exists(model_dir):
-        raise FileNotFoundError(f"Model directory not found: {model_dir}. Please fine-tune the model first.")
-    
-    print(f"Loading model and tokenizer from {model_dir}")
-    MODEL = AutoModelForSeq2SeqLM.from_pretrained(model_dir)
-    TOKENIZER = AutoTokenizer.from_pretrained(model_dir)
-    
-    # Move to GPU if available
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    MODEL.to(device)
-    MODEL.eval()
-    
-    print(f"Model loaded and ready on {device}")
+    try:
+        if os.path.exists(model_dir):
+            print(f"Loading fine-tuned model from {model_dir}")
+            MODEL = AutoModelForSeq2SeqLM.from_pretrained(model_dir)
+            TOKENIZER = AutoTokenizer.from_pretrained(model_dir)
+            USING_PRETRAINED = False
+        else:
+            print(f"Fine-tuned model not found. Loading pre-trained model {MODEL_NAME} instead.")
+            MODEL = AutoModelForSeq2SeqLM.from_pretrained(MODEL_NAME)
+            TOKENIZER = AutoTokenizer.from_pretrained(MODEL_NAME)
+            USING_PRETRAINED = True
+            
+        # Move to GPU if available
+        device = 'cuda' if torch.cuda.is_available() else 'cpu'
+        MODEL.to(device)
+        MODEL.eval()
+        
+        print(f"Model loaded and ready on {device}")
+        
+    except Exception as e:
+        print(f"Error loading model: {str(e)}")
+        raise
 
 def generate_summary(text):
     """
@@ -133,6 +143,10 @@ def fetch_article_from_url(url):
 @app.route('/')
 def home():
     """Home page with a simple UI for the summarization service"""
+    global USING_PRETRAINED
+    
+    model_status = "Using pre-trained model (fine-tuned model not found)" if USING_PRETRAINED else "Using fine-tuned model"
+    
     html = """
     <!DOCTYPE html>
     <html>
@@ -202,11 +216,21 @@ def home():
             .tab-content.active {
                 display: block;
             }
+            .model-status {
+                background-color: #f8f9fa;
+                padding: 10px;
+                margin-bottom: 20px;
+                border-left: 4px solid #17a2b8;
+            }
         </style>
     </head>
     <body>
         <h1>News Summarization Service</h1>
-        <p>Automatically generate concise summaries of news articles using our fine-tuned AI model.</p>
+        <p>Automatically generate concise summaries of news articles using an AI model.</p>
+        
+        <div class="model-status">
+            <strong>Status:</strong> """ + model_status + """
+        </div>
         
         <div class="container">
             <div class="tabs">
@@ -343,7 +367,8 @@ def api_summarize():
         summary = generate_summary(text)
         return jsonify({
             'summary': summary,
-            'timestamp': datetime.now().isoformat()
+            'timestamp': datetime.now().isoformat(),
+            'using_pretrained': USING_PRETRAINED
         })
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -371,7 +396,8 @@ def api_summarize_url():
             'title': article.get('title', 'Article'),
             'url': article.get('link', url),
             'summary': summary,
-            'timestamp': datetime.now().isoformat()
+            'timestamp': datetime.now().isoformat(),
+            'using_pretrained': USING_PRETRAINED
         })
     except Exception as e:
         return jsonify({'error': str(e)}), 500

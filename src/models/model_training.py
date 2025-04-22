@@ -1,5 +1,6 @@
 """
 Module for fine-tuning a Hugging Face model for news summarization
+with compatibility for Colab environment
 """
 
 import os
@@ -12,7 +13,7 @@ from transformers import (
     AutoModelForSeq2SeqLM,
     DataCollatorForSeq2Seq,
     Seq2SeqTrainingArguments,
-    Seq2SeqTrainer
+    Trainer
 )
 
 # Import configuration
@@ -93,6 +94,49 @@ def prepare_dataset_for_training(dataset_dict, tokenizer):
     
     return tokenized_datasets
 
+# Define a simple ROUGE metric for evaluation during training
+class RougeMetric:
+    def __init__(self, tokenizer):
+        self.tokenizer = tokenizer
+        try:
+            from rouge_score import rouge_scorer
+            self.scorer = rouge_scorer.RougeScorer(['rouge1', 'rouge2', 'rougeL'], use_stemmer=True)
+        except ImportError:
+            print("Installing rouge-score package...")
+            import subprocess
+            subprocess.run([sys.executable, "-m", "pip", "install", "rouge-score", "--quiet"])
+            from rouge_score import rouge_scorer
+            self.scorer = rouge_scorer.RougeScorer(['rouge1', 'rouge2', 'rougeL'], use_stemmer=True)
+    
+    def compute_metrics(self, eval_preds):
+        predictions, labels = eval_preds
+        
+        # Decode generated summaries
+        decoded_preds = self.tokenizer.batch_decode(predictions, skip_special_tokens=True)
+        
+        # Replace -100 in the labels as we can't decode them
+        labels = np.where(labels != -100, labels, self.tokenizer.pad_token_id)
+        decoded_labels = self.tokenizer.batch_decode(labels, skip_special_tokens=True)
+        
+        # Compute ROUGE scores
+        rouge1 = rouge2 = rougeL = 0.0
+        for pred, label in zip(decoded_preds, decoded_labels):
+            scores = self.scorer.score(label, pred)
+            rouge1 += scores['rouge1'].fmeasure
+            rouge2 += scores['rouge2'].fmeasure
+            rougeL += scores['rougeL'].fmeasure
+        
+        num_samples = len(decoded_preds)
+        rouge1 /= num_samples
+        rouge2 /= num_samples
+        rougeL /= num_samples
+        
+        return {
+            'rouge1': rouge1,
+            'rouge2': rouge2,
+            'rougeL': rougeL
+        }
+
 def fine_tune_model(tokenized_datasets):
     """
     Fine-tune the model on our dataset
@@ -106,6 +150,9 @@ def fine_tune_model(tokenized_datasets):
         tokenizer=tokenizer,
         model=MODEL_NAME
     )
+    
+    # Setup metric for evaluation
+    rouge_metric = RougeMetric(tokenizer)
     
     # Define training arguments
     os.makedirs(MODELS_DIR, exist_ok=True)
@@ -131,14 +178,15 @@ def fine_tune_model(tokenized_datasets):
         report_to="none",  # Set to "wandb" to use Weights & Biases
     )
     
-    # Initialize trainer
-    trainer = Seq2SeqTrainer(
+    # Initialize trainer using standard Trainer instead of Seq2SeqTrainer for better compatibility
+    trainer = Trainer(
         model=model,
         args=training_args,
         train_dataset=tokenized_datasets["train"],
         eval_dataset=tokenized_datasets["validation"],
         tokenizer=tokenizer,
         data_collator=data_collator,
+        compute_metrics=rouge_metric.compute_metrics,
     )
     
     # Train the model
